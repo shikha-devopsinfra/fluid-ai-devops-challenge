@@ -1,0 +1,29 @@
+name: Fluid AI CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-test-deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t fluid-backend:${{ github.sha }} ./app
+
+      - name: Load image into Minikube
+        run: minikube image load fluid-backend:${{ github.sha }}
+
+      - name: Update Kubernetes image
+        run: kubectl set image deployment/backend backend=fluid-backend:${{ github.sha }}
+
+      - name: Wait for rollout
+        run: kubectl rollout status deployment/backend --timeout=120s
+
+      - name: Verify deployment
+        run: kubectl get pods
